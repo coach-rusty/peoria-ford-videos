@@ -309,11 +309,12 @@ async function loadData(){
     const tW=members.reduce((s,m)=>s+m.week,0);
     const tM=members.reduce((s,m)=>s+m.month,0);
     const rows=members.map(m=>{
-      const rowClass=m.status==='goal'?'row-goal':m.status==='warn'?'row-warn':'row-miss';
+      const st=WEEKLY_GOAL>0?(m.week>=WEEKLY_GOAL?'goal':m.week>0?'warn':'miss'):(m.today>=2?'goal':m.today===1?'warn':'miss');
+      const rowClass=st==='goal'?'row-goal':st==='warn'?'row-warn':'row-miss';
       const nameHTML=m.url?`<a href="${m.url}" target="_blank">${m.name}</a>`:`<span>${m.name}</span>`;
       const todayClass=m.today>=2?'cc goal':m.today>0?'cc hv':'cc';
       const picons=platformIcons(m.platforms);
-      return `<tr class="${rowClass}"><td class="sp-name">${nameHTML}${picons}</td><td class="tc"><span class="${todayClass}">${m.today}</span></td><td class="tc"><span class="cc ${m.week>0?'hv':''}">${m.week}</span></td><td class="tc"><span class="cc ${m.month>0?'hv':''}">${m.month}</span></td><td class="tc"><span class="cc ${m.total>0?'hv':''}">${m.total}</span></td><td class="tc">${statusIcon(m.status)}</td></tr>`;
+      return `<tr class="${rowClass}"><td class="sp-name">${nameHTML}${picons}</td><td class="tc"><span class="${todayClass}">${m.today}</span></td><td class="tc"><span class="cc ${m.week>0?'hv':''}">${m.week}</span></td><td class="tc"><span class="cc ${m.month>0?'hv':''}">${m.month}</span></td><td class="tc"><span class="cc ${m.total>0?'hv':''}">${m.total}</span></td><td class="tc">${statusIcon(st)}</td></tr>`;
     }).join('');
     const mgrLine=mgr?`Mgr: ${mgr}${asm?' · ASM: '+asm:''}`:asm?`ASM: ${asm}`:'';
     const onGoalCount=members.filter(m=>m.today>=2).length;
