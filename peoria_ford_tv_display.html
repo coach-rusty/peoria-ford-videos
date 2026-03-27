@@ -156,6 +156,11 @@ const M_TBL='tblCAPnHz8rvg2Jdd';
 const P_TBL='tbl09cBA9wAvdTfbB';
 const V_TBL='tblumHxwkZ65MKU4g';
 const REFRESH=60;
+// ─── WEEKLY GOAL OVERRIDE ───
+// Set to a number (e.g. 7) to base status on WEEK count instead of TODAY count
+// Set to 0 for normal mode (status based on today's count)
+const WEEKLY_GOAL = 7;
+
 const TEAM_ORDER=['New Team A','New Team B','New Team C','New Team D','Used Team A','Used Team B','Used Team C','Internet Team A'];
 
 async function fetchAll(tbl){
@@ -273,9 +278,9 @@ async function loadData(){
   const all=mRecs.map(r=>({today:parseInt(r.fields['Today Count']||0),week:parseInt(r.fields['Week Count']||0),status:getSt(r.fields['Status'])}));
   const totalToday=all.reduce((s,p)=>s+p.today,0);
   const totalWeek=all.reduce((s,p)=>s+p.week,0);
-  const onTrack=all.filter(p=>p.status==='goal').length;
-  const warning=all.filter(p=>p.status==='warn').length;
-  const notStarted=all.filter(p=>p.status==='miss').length;
+  const onTrack=all.filter(p=>(WEEKLY_GOAL>0?parseInt(p.week||0)>=WEEKLY_GOAL:parseInt(p.today||0)>=2)).length;
+  const warning=all.filter(p=>(WEEKLY_GOAL>0?(parseInt(p.week||0)>0&&parseInt(p.week||0)<WEEKLY_GOAL):(parseInt(p.today||0)===1))).length;
+  const notStarted=all.filter(p=>(WEEKLY_GOAL>0?parseInt(p.week||0)===0:(parseInt(p.today||0)===0))).length;
   const weekGoal=46*10;
   const weekPct=Math.min(Math.round((totalWeek/weekGoal)*100),100);
 
@@ -328,9 +333,9 @@ async function loadData(){
   document.getElementById('mainContent').innerHTML=`
     <div class="store-summary">
       <div class="summary-card total"><div class="big-number">${totalToday}</div><div class="card-label">Videos Today</div><div class="card-sub">Goal: 2 per person</div></div>
-      <div class="summary-card on-track"><div class="big-number">${onTrack}</div><div class="card-label">On Goal</div><div class="card-sub">2+ videos today</div></div>
-      <div class="summary-card warning"><div class="big-number">${warning}</div><div class="card-label">Below Goal</div><div class="card-sub">1 video today</div></div>
-      <div class="summary-card not-started"><div class="big-number">${notStarted}</div><div class="card-label">Not Started</div><div class="card-sub">0 videos today</div></div>
+      <div class="summary-card on-track"><div class="big-number">${onTrack}</div><div class="card-label">On Goal</div><div class="card-sub">${WEEKLY_GOAL>0?WEEKLY_GOAL+'+ videos this week':'2+ videos today'}</div></div>
+      <div class="summary-card warning"><div class="big-number">${warning}</div><div class="card-label">In Progress</div><div class="card-sub">${WEEKLY_GOAL>0?'1–'+(WEEKLY_GOAL-1)+' videos this week':'1 video today'}</div></div>
+      <div class="summary-card not-started"><div class="big-number">${notStarted}</div><div class="card-label">Not Started</div><div class="card-sub">${WEEKLY_GOAL>0?'0 videos this week':'0 videos today'}</div></div>
     </div>
     <div style="padding:0 24px 10px">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
