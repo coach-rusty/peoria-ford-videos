@@ -383,8 +383,6 @@ async function loadData(){
   const weekPct=Math.min(Math.round((totalWeek/weekGoal)*100),100);
 
 
-  let leader=null;
-
   // Hot list (not posted)
   const hotList=[];
   mRecs.filter(r=>getSt(r.fields['Status'])==='miss').forEach(r=>{
