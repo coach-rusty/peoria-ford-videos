@@ -74,11 +74,11 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .goal-pill{display:inline-flex;align-items:center;gap:4px;background:rgba(0,61,165,0.1);border:1px solid rgba(0,61,165,0.3);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:600;color:#003DA5;}
 
 /* HOT LIST */
-.hot-list{margin:0 24px 12px;background:rgba(185,28,28,0.07);border:1px solid rgba(185,28,28,0.2);border-radius:8px;padding:8px 16px;}
-.hot-list-header{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
-.hot-list-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#f87171;}
-.hot-pills{display:flex;flex-wrap:wrap;gap:4px;}
-.hot-pill{background:rgba(185,28,28,0.15);border:1px solid rgba(185,28,28,0.25);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600;color:#fca5a5;}
+.hot-list{margin:0 24px 12px;background:rgba(185,28,28,0.1);border:2px solid rgba(185,28,28,0.5);border-radius:10px;padding:12px 20px;}
+.hot-list-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.hot-list-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#dc2626;}
+.hot-pills{display:flex;flex-wrap:wrap;gap:6px;}
+.hot-pill{background:#dc2626;border-radius:6px;padding:5px 14px;font-size:14px;font-weight:700;color:white;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.5px;}
 
 /* TEAMS GRID */
 .teams-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 24px;}
@@ -191,7 +191,7 @@ function platformIcons(platforms){
 
 function statusIcon(s){
   if(s==='goal') return '<svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#16a34a"/><path d="M7.5 14L11.5 18L20.5 8.5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
-  if(s==='warn') return '<svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#ea580c"/><text x="14" y="20" text-anchor="middle" font-size="16" font-weight="900" font-family="Arial Black,Arial,sans-serif" fill="white">1</text></svg>';
+  if(s==='warn') return '<svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#f97316"/><text x="14" y="20" text-anchor="middle" font-size="16" font-weight="900" font-family="Arial Black,Arial,sans-serif" fill="white">1</text></svg>';
   if(s==='miss') return '<svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#dc2626"/><path d="M9 9L19 19M19 9L9 19" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>';
   return '<svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="none" stroke="#d1d5db" stroke-width="1.5"/></svg>';
 }
@@ -278,9 +278,9 @@ async function loadData(){
   const all=mRecs.map(r=>({today:parseInt(r.fields['Today Count']||0),week:parseInt(r.fields['Week Count']||0),status:getSt(r.fields['Status'])}));
   const totalToday=all.reduce((s,p)=>s+p.today,0);
   const totalWeek=all.reduce((s,p)=>s+p.week,0);
-  const onTrack=all.filter(p=>(WEEKLY_GOAL>0?parseInt(p.week||0)>=WEEKLY_GOAL:parseInt(p.today||0)>=2)).length;
-  const warning=all.filter(p=>(WEEKLY_GOAL>0?(parseInt(p.week||0)>0&&parseInt(p.week||0)<WEEKLY_GOAL):(parseInt(p.today||0)===1))).length;
-  const notStarted=all.filter(p=>(WEEKLY_GOAL>0?parseInt(p.week||0)===0:(parseInt(p.today||0)===0))).length;
+  const onTrack=all.filter(p=>parseInt(p.today||0)>=2).length;
+  const warning=all.filter(p=>parseInt(p.today||0)===1).length;
+  const notStarted=all.filter(p=>parseInt(p.today||0)===0).length;
   const weekGoal=46*10;
   const weekPct=Math.min(Math.round((totalWeek/weekGoal)*100),100);
 
@@ -309,12 +309,20 @@ async function loadData(){
     const tW=members.reduce((s,m)=>s+m.week,0);
     const tM=members.reduce((s,m)=>s+m.month,0);
     const rows=members.map(m=>{
-      const st=WEEKLY_GOAL>0?(m.week>=WEEKLY_GOAL?'goal':m.week>0?'warn':'miss'):(m.today>=2?'goal':m.today===1?'warn':'miss');
-      const rowClass=st==='goal'?'row-goal':st==='warn'?'row-warn':'row-miss';
-      const nameHTML=m.url?`<a href="${m.url}" target="_blank">${m.name}</a>`:`<span>${m.name}</span>`;
-      const todayClass=m.today>=2?'cc goal':m.today>0?'cc hv':'cc';
+      if(asmNames.has(m.name)) return '';
+      const daySt=m.today>=2?'goal':m.today===1?'warn':'miss';
+      const weekSt=WEEKLY_GOAL>0?(m.week>=WEEKLY_GOAL?'goal':m.week>0?'warn':'miss'):'none';
+      // Green = hit weekly goal. Under 7 = daily tracking applies.
+      const weekDone=WEEKLY_GOAL>0&&m.week>=WEEKLY_GOAL;
+      const overallSt=weekDone?'goal':daySt==='goal'?'warn':daySt==='warn'?'warn':'miss';
+      const rowClass=weekDone?'row-goal':daySt!=='miss'?'row-warn':'row-miss';
+      const fireIcon=m.today>=3?'<span style="font-size:16px;margin-left:4px;">🔥</span>':'';
+      const nameHTML=m.url?`<a href="${m.url}" target="_blank">${m.name}</a>${fireIcon}`:`<span>${m.name}</span>${fireIcon}`;
       const picons=platformIcons(m.platforms);
-      return `<tr class="${rowClass}"><td class="sp-name">${nameHTML}${picons}</td><td class="tc"><span class="${todayClass}">${m.today}</span></td><td class="tc"><span class="cc ${m.week>0?'hv':''}">${m.week}</span></td><td class="tc"><span class="cc ${m.month>0?'hv':''}">${m.month}</span></td><td class="tc"><span class="cc ${m.total>0?'hv':''}">${m.total}</span></td><td class="tc">${statusIcon(st)}</td></tr>`;
+      // Color just the number text
+      const dayColor=daySt==='goal'?'#16a34a':daySt==='warn'?'#f97316':'#cbd5e1';
+      const weekColor=weekSt==='goal'?'#16a34a':weekSt==='warn'?'#f97316':'#cbd5e1';
+      return `<tr class="${rowClass}"><td class="sp-name">${nameHTML}${picons}</td><td class="tc"><span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:${dayColor}">${m.today}</span></td><td class="tc"><span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:${weekColor}">${m.week}</span></td><td class="tc"><span class="cc ${m.month>0?'hv':''}">${m.month}</span></td><td class="tc"><span class="cc ${m.total>0?'hv':''}">${m.total}</span></td><td class="tc">${statusIcon(overallSt)}</td></tr>`;
     }).join('');
     const mgrLine=mgr?`Mgr: ${mgr}${asm?' · ASM: '+asm:''}`:asm?`ASM: ${asm}`:'';
     const onGoalCount=members.filter(m=>m.today>=2).length;
@@ -327,16 +335,16 @@ async function loadData(){
   // Hot list HTML
   const azDay=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Phoenix'})).getDay();
   const isRequiredDay=azDay>=0&&azDay<=4;
-  const hotHTML=isRequiredDay&&hotList.length?`<div class="hot-list"><div class="hot-list-header"><div class="hot-list-title">&#9888; Not Posted Today &mdash; ${hotList.length} ${hotList.length===1?'person':'people'}</div></div><div class="hot-pills">${hotList.map(p=>`<span class="hot-pill">${p.name}</span>`).join('')}</div></div>`:'';
+  const hotHTML=isRequiredDay&&hotList.length?`<div class="hot-list"><div class="hot-list-header"><div class="hot-list-title">❌ NOT POSTED TODAY &mdash; ${hotList.length} ${hotList.length===1?'PERSON':'PEOPLE'}</div></div><div class="hot-pills">${hotList.map(p=>`<span class="hot-pill">${p.name}</span>`).join('')}</div></div>`:'';
 
   const leaderHTML='';
 
   document.getElementById('mainContent').innerHTML=`
     <div class="store-summary">
       <div class="summary-card total"><div class="big-number">${totalToday}</div><div class="card-label">Videos Today</div><div class="card-sub">Goal: 2 per person</div></div>
-      <div class="summary-card on-track"><div class="big-number">${onTrack}</div><div class="card-label">On Goal</div><div class="card-sub">${WEEKLY_GOAL>0?WEEKLY_GOAL+'+ videos this week':'2+ videos today'}</div></div>
-      <div class="summary-card warning"><div class="big-number">${warning}</div><div class="card-label">In Progress</div><div class="card-sub">${WEEKLY_GOAL>0?'1–'+(WEEKLY_GOAL-1)+' videos this week':'1 video today'}</div></div>
-      <div class="summary-card not-started"><div class="big-number">${notStarted}</div><div class="card-label">Not Started</div><div class="card-sub">${WEEKLY_GOAL>0?'0 videos this week':'0 videos today'}</div></div>
+      <div class="summary-card on-track"><div class="big-number">${onTrack}</div><div class="card-label">On Goal</div><div class="card-sub">2+ videos today</div></div>
+      <div class="summary-card warning"><div class="big-number">${warning}</div><div class="card-label">In Progress</div><div class="card-sub">1 video today</div></div>
+      <div class="summary-card not-started"><div class="big-number">${notStarted}</div><div class="card-label">Not Started</div><div class="card-sub">0 videos today</div></div>
     </div>
     <div style="padding:0 24px 10px">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -350,7 +358,7 @@ async function loadData(){
     <div class="date-bar">
       <strong>${now}</strong>
       <div class="goal-pills">
-        <span class="goal-pill">2 videos/day</span>
+        <span class="goal-pill">2 videos/day</span><span class="goal-pill">7 videos/week goal</span>
         <span class="goal-pill">10 videos/week</span>
         <span class="goal-pill">Sun &ndash; Thu</span>
         <span class="goal-pill">Refreshes every 60s</span>
